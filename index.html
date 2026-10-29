@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Twisted Promotions</title>
+<style>
+  :root { --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; background: #000; overflow: hidden; }
+
+  body {
+    font-family: var(--font-sans);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* The whole visible page content, so we can twist it as one unit */
+  #tp-stage {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2.5rem;
+    transform-origin: 50% 50%;
+    transition: transform 1.8s cubic-bezier(.7,0,.3,1),
+                filter 1.8s cubic-bezier(.7,0,.3,1),
+                border-radius 1.8s cubic-bezier(.7,0,.3,1);
+    position: relative;
+  }
+
+  .tp-logo {
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #fff;
+    position: absolute;
+    top: 1.75rem;
+    left: 2rem;
+  }
+  .tp-logo span { color: #888; }
+
+  .tp-headline {
+    font-size: clamp(32px, 6vw, 64px);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-align: center;
+    line-height: 1.05;
+  }
+
+  .tp-sub {
+    font-size: 13px;
+    color: #888;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  #tp-twist-btn {
+    padding: 0.9rem 2.4rem;
+    border: 0.5px solid #fff;
+    color: #fff;
+    background: transparent;
+    font-size: 13px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    transition: background 0.2s, color 0.2s, transform 0.2s;
+  }
+  #tp-twist-btn:hover { background: #fff; color: #000; }
+  #tp-twist-btn:active { transform: scale(0.96); }
+
+  /* Decorative grid dots in the background, just so there's visible geometry to warp */
+  #tp-grid {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(#111 0.5px, transparent 0.5px),
+      linear-gradient(90deg, #111 0.5px, transparent 0.5px);
+    background-size: 48px 48px;
+    z-index: -1;
+  }
+
+  /* ---- THE TWIST ---- */
+  #tp-stage.twisting {
+    animation: tp-whirlpool 2.6s cubic-bezier(.6,0,.4,1) forwards;
+  }
+
+  @keyframes tp-whirlpool {
+    0% {
+      transform: rotate(0deg) scale(1);
+      filter: brightness(1) blur(0px);
+      border-radius: 0;
+    }
+    35% {
+      transform: rotate(340deg) scale(0.85);
+      filter: brightness(0.9) blur(0.5px);
+      border-radius: 20%;
+    }
+    65% {
+      transform: rotate(900deg) scale(0.35);
+      filter: brightness(0.4) blur(2px);
+      border-radius: 50%;
+    }
+    85% {
+      transform: rotate(1500deg) scale(0.04);
+      filter: brightness(0.05) blur(4px);
+      border-radius: 50%;
+    }
+    100% {
+      transform: rotate(1620deg) scale(0.001);
+      filter: brightness(0) blur(6px);
+      border-radius: 50%;
+    }
+  }
+
+  /* A radial vignette that intensifies as things collapse, sells the "event horizon" feel */
+  #tp-vignette {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at center, transparent 0%, transparent 40%, #000 100%);
+    opacity: 0;
+    transition: opacity 1.8s ease;
+    z-index: 5;
+  }
+  body.tp-active #tp-vignette { opacity: 1; }
+
+  /* Final fade to black right before the redirect fires, so the cut to the real page is seamless */
+  #tp-blackout {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    z-index: 10;
+  }
+  #tp-blackout.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="tp-grid"></div>
+<div id="tp-vignette"></div>
+<div id="tp-blackout"></div>
+
+<div id="tp-stage">
+  <div class="tp-logo">Twisted<span> /</span> Promotions</div>
+  <img src="twisted-nav-logo.png" alt="Twisted Promotions logo" style="width:120px; height:auto;">
+  <div class="tp-sub">Escape Reality...</div>
+  <div class="tp-headline">GET TWISTED</div>
+  <button id="tp-twist-btn">Get Twisted</button>
+</div>
+
+<script>
+  const stage = document.getElementById('tp-stage');
+  const body = document.body;
+  const btn = document.getElementById('tp-twist-btn');
+  const blackout = document.getElementById('tp-blackout');
+  let animating = false;
+
+  // Where the button leads once the whirlpool finishes collapsing
+  const DESTINATION = 'home.html';
+
+  btn.addEventListener('click', () => {
+    if (animating) return;
+    animating = true;
+    btn.disabled = true;
+    body.classList.add('tp-active');
+    stage.classList.add('twisting');
+
+    stage.addEventListener('animationend', function onCollapse(e) {
+      if (e.animationName !== 'tp-whirlpool') return;
+      stage.removeEventListener('animationend', onCollapse);
+
+      // Brief blackout beat, then hand off to the real homepage
+      blackout.classList.add('show');
+      setTimeout(() => {
+        window.location.href = DESTINATION;
+      }, 450);
+    });
+  });
+</script>
+
+</body>
+</html>
